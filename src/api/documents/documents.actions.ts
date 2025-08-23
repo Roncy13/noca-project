@@ -2,6 +2,7 @@ import SmurfResponse, { SmurfAction } from "@core/response";
 import {
   AskAnyQuestionSrv,
   GenerateBaseQuestionsToAskSrv,
+  GenerateDraftSrv,
   GenerateFollowupQuestionSrv,
   GenerateKeyIfNotExist,
 } from "./documents.services";
@@ -11,6 +12,7 @@ import {
 } from "./documents.validators";
 import { Request } from "express";
 import {
+  IDocumentDraftClauses,
   IDocumentsBasicQuestion,
   IDocumentTopicsToAsk,
 } from "./documents.types";
@@ -27,8 +29,22 @@ export class DocumentsApi extends SmurfResponse {
 }
 
 @SmurfAction({
+  action: "/documents/generateDraft",
+  message: "Document draft generated successfully",
+  validation: DocumentsTopics,
+  method: HTTP_METHODS.POST,
+})
+export class GenerateDraftAction extends SmurfResponse {
+  async run(request: Request) {
+    const body = request.body as IDocumentDraftClauses;
+    const ipAddress = request.ip;
+    this.result = await GenerateDraftSrv(body, ipAddress);
+  }
+}
+
+@SmurfAction({
   action: "/documents/topics",
-  message: "Document followup question generated successfully",
+  message: "Document topics generated successfully",
   validation: DocumentsTopics,
   method: HTTP_METHODS.POST,
 })
@@ -49,7 +65,7 @@ export class AskingBasQuestionsAction extends SmurfResponse {
   async run(request: Request) {
     const body = request.body as IDocumentsBasicQuestion;
     const ipAddress = request.ip;
-    this.result = await GenerateFollowupQuestionSrv(body, ipAddress);
+    this.result = await GenerateFollowupQuestionSrv(body);
   }
 }
 

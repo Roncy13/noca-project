@@ -21,24 +21,14 @@ const FollowupQuestionSchema: Schema = new Schema(
       unique: true, // optional if each key should be unique
       trim: true,
     },
-    questions: [
-      {
-        question: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        answer: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-      },
-    ],
-    expiresAt: {
-      type: Date,
-      default: () => new Date(Date.now() + 1000 * 60 * 60), // now + 1 hour
-      index: { expires: 0 }, // TTL 0s = expire immediately
+    draft: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    sections: {
+      type: [String],
+      required: false,
     },
   },
   {

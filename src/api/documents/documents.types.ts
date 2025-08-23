@@ -7,3 +7,7 @@ export class IDocumentTopicsToAsk {
 export class IDocumentsBasicQuestion extends IDocumentTopicsToAsk {
   topic: string;
 }
+
+export class IDocumentDraftClauses extends IDocumentsBasicQuestion {
+  supportingDetails: string;
+}

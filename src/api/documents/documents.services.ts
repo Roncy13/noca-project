@@ -10,6 +10,7 @@
 import { openai } from "@config/app-settings/openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import {
+  IDocumentDraftClauses,
   IDocumentsBasicQuestion,
   IDocumentTopicsToAsk,
 } from "./documents.types";
@@ -151,8 +152,7 @@ export const GenerateBaseQuestionsToAskSrv = async (
 };
 
 export const GenerateFollowupQuestionSrv = async (
-  payload: IDocumentsBasicQuestion,
-  key: string
+  payload: IDocumentsBasicQuestion
 ) => {
   const userContent = `Please generate a followup question document: ${
     payload.type
@@ -162,7 +162,6 @@ export const GenerateFollowupQuestionSrv = async (
           Topic: ${payload.topic}
           `;
 
-  console.log(userContent, " userContent");
   try {
     const response = await openai.chat.completions.create({
       messages: [
@@ -214,74 +213,78 @@ export const GenerateFollowupQuestionSrv = async (
   }
 };
 
-// export const GenerateFollowupQuestionSrv = async (
-//   payload: IDocumentsBasicQuestion,
-//   key: string
-// ) => {
-//   console.log("generating followup question srv");
+export const GenerateDraftSrv = async (
+  payload: IDocumentDraftClauses,
+  key: string
+) => {
+  const userContent = `Please create me a draft sections for  ${
+    payload.type
+  }, Jurisdiction: ${payload.jurisdiction} in the industry of ${
+    payload.industry
+  } ${payload.otherDetails ? `Other Details: ${payload.otherDetails}` : ""}
+          Topic: ${payload.topic}
+          Supporting Details: ${payload.supportingDetails}
+          `;
 
-//   try {
-//     const response = await openai.chat.completions.create({
-//       model: "gpt-4o-mini", // or your model
-//       messages: [
-//         {
-//           role: "system",
-//           content:
-//             "You are an AI Legal Document Assistant. Generate at least 5 follow-up questions and suggested answers in structured JSON.",
-//         },
-//         {
-//           role: "user",
-//           content: `Generate a follow-up question document:
-//           Type: ${payload.type},
-//           Jurisdiction: ${payload.jurisdiction},
-//           Industry: ${payload.industry}
-//           ${payload.otherDetails ? `Other Details: ${payload.otherDetails}` : ""}`,
-//         },
-//       ],
-//       tools: [
-//         {
-//           type: "function",
-//           function: {
-//             name: "store_followup_questions",
-//             description: "Generate follow-up legal questions and suggested answers",
-//             parameters: {
-//               type: "object",
-//               properties: {
-//                 questions: {
-//                   type: "array",
-//                   minItems: 5,
-//                   items: {
-//                     type: "object",
-//                     properties: {
-//                       question: { type: "string" },
-//                       suggested_answer: { type: "string" },
-//                     },
-//                     required: ["question", "suggested_answer"],
-//                   },
-//                 },
-//               },
-//               required: ["questions"],
-//             },
-//           },
-//         },
-//       ],
-//       tool_choice: { type: "function", function: { name: "store_followup_questions" } },
-//     });
+  try {
+    const response = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `
+            You are an AI Legal Document Assistant. 
 
-//     // Extract function call result
-//     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
-//     if (!toolCall) {
-//       throw new Error("No function call response from model");
-//     }
+            Your task is to generate draft sections for a document based on the information provided.
 
-//     const args = JSON.parse(toolCall.function.arguments);
+            ⚠️ RULES:
+            1. Respond ONLY in valid JSON — nothing else.  
+            2. The JSON must be a single object with having 1 property which is "sections".  
+            3. "sections" must be an array of strings only.  
+            4. Each string should describe a section or component of the document in concise detail.  
+            5. Do NOT include any objects, key-value pairs, single quotes, or extra text inside the array.  
+            6. Make sure sections are comprehensive, logical, and correlated to each other.
 
-//     return args; // { questions: [...] }
-//   } catch (error) {
-//     throw new Error(
-//       `Failed to get follow-up questions: ${
-//         error instanceof Error ? error.message : String(error)
-//       }`
-//     );
-//   }
-// };
+            Input Information:
+            Type: {payload.type}  
+            Jurisdiction: {payload.jurisdiction}  
+            Industry: {payload.industry}  
+            Other Details: {payload.otherDetails ?? "N/A"}
+
+            Example response format (do not copy content, this is just structure):
+
+            {
+                "sections": [
+                    "Header: Company Logo, Company Name & Contact Information (Address, Phone, Email, Website), Document Title, Document Number, Document Date",
+                    "Client Information: Client Name, Contact Person, Client Address, Email / Phone",
+                    "Project / Service Details: Description of service, Service Type, Hours / Quantity, Rate / Unit Price, Total, Project or task codes, Milestone or deliverable reference",
+                    "Subtotal: Sum of all items before taxes or discounts",
+                    "Taxes / Fees: VAT / GST (if applicable), Service Tax / Other applicable taxes",
+                    "Discounts (if applicable): Percentage or flat amount",
+                    "Total Amount Due: Final amount to pay, clearly highlighted",
+                    "Payment Terms: Accepted Payment Methods, Bank Details, Late Payment Penalties, Currency",
+                    "Notes / Additional Information: Project reference numbers, License or software usage terms, Thank you note or custom message",
+                    "Footer: Legal disclaimers or terms & conditions, Contact for document queries"
+                ]
+            }
+          `,
+        },
+        {
+          role: "user",
+          content: userContent,
+        },
+      ],
+      model: "phi3:mini",
+      response_format: { type: "json_object" },
+    });
+
+    const result = response.choices[0]?.message.content;
+
+    return JSON.parse(result);
+  } catch (error) {
+    throw new Error(
+      `Failed to get response from DeepSeek: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+};

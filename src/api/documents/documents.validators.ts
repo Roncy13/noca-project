@@ -36,15 +36,18 @@ export const DocumentsTopics: Schema = {
 };
 export const DocumentsBasicQuestion: Schema = {
   ...DocumentsTopics,
-  questions: {
-    ...inBody,
-    optional: true,
-    isArray: true,
-  },
   topic: {
     ...inBody,
     notEmpty: {
       errorMessage: "topic is required",
     },
+  },
+};
+
+export const DocumentsGenerateClauses: Schema = {
+  ...DocumentsBasicQuestion,
+  supportingDetails: {
+    ...inBody,
+    notEmpty: "supportingDetails is required",
   },
 };
