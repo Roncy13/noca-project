@@ -2,6 +2,7 @@ import SmurfResponse, { SmurfAction } from "@core/response";
 import {
   AskAnyQuestionSrv,
   GenerateFollowupQuestionSrv,
+  GenerateKeyIfNotExist,
 } from "./documents.services";
 import { DocumentsBasicQuestion } from "./documents.validators";
 import { Request } from "express";
@@ -24,9 +25,22 @@ export class DocumentsApi extends SmurfResponse {
   validation: DocumentsBasicQuestion,
   method: HTTP_METHODS.POST,
 })
-export class AskingBasQuestions extends SmurfResponse {
+export class AskingBasQuestionsAction extends SmurfResponse {
   async run(request: Request) {
     const body = request.body as IDocumentsBasicQuestion;
-    this.result = await GenerateFollowupQuestionSrv(body);
+    const ipAddress = request.ip;
+    this.result = await GenerateFollowupQuestionSrv(body, ipAddress);
+  }
+}
+
+@SmurfAction({
+  action: "/documents/getSession",
+  message: "Document followup question generated successfully",
+  method: HTTP_METHODS.GET,
+})
+export class DocumentGetSessionAction extends SmurfResponse {
+  async run(request: Request) {
+    const ipAddress = request.ip;
+    this.result = await GenerateKeyIfNotExist(ipAddress);
   }
 }

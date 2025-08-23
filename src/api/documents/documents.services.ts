@@ -11,6 +11,7 @@ import { openai } from "@config/app-settings/openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { IDocumentsBasicQuestion } from "./documents.types";
 import { LegalDocumentSchema } from "./documents.zod";
+import { FollowupQuestion } from "./documents.model";
 const commonOpenAiProps = {
   model: "llama3.1:8b",
   temperature: 0.1,
@@ -63,8 +64,15 @@ export const AskAnyQuestionSrv = async () => {
   }
 };
 
+export const GenerateKeyIfNotExist = (ipAddress: string) => {
+  return FollowupQuestion.findOne({
+    key: ipAddress,
+  });
+};
+
 export const GenerateFollowupQuestionSrv = async (
-  payload: IDocumentsBasicQuestion
+  payload: IDocumentsBasicQuestion,
+  key: string
 ) => {
   console.log("generating followup question srv");
   try {
@@ -73,45 +81,44 @@ export const GenerateFollowupQuestionSrv = async (
         {
           role: "system",
           content: `You are an AI Legal Document Assistant. 
-Your purpose is to generate follow-up questions for the information the user provided. 
+            Your purpose is to generate follow-up questions for the information the user provided. 
 
-**Your Instructions:**
-1. Generate AT LEAST 5 follow-up questions related to the information provided. 
-2. For EACH question, create a suggested answer. 
-3. Respond ONLY in valid JSON — nothing else.
+            **Your Instructions:**
+            1. Generate AT LEAST 5 follow-up questions related to the information provided. 
+            2. For EACH question, create a suggested answer. 
+            3. Respond ONLY in valid JSON — nothing else.
 
-<Result>
-STRICTLY respond ONLY in a valid JSON OBJECT with a property "questions" that contains an array of 5 or more objects.  
-⚠️ Do not output a single object by itself.  
-⚠️ Do not include text outside of the JSON object.  
+            <Result>
+            STRICTLY respond ONLY in a valid JSON OBJECT with a property "questions" that contains an array of 5 or more objects.  
+            ⚠️ Do not output a single object by itself.  
+            ⚠️ Do not include text outside of the JSON object.  
 
-The JSON must strictly follow this structure:
+            The JSON must strictly follow this structure:
 
-{
-  "questions": [
-    {
-      "question": "string",
-      "suggested_answer": "string"
-    }
-  ]
-}
+            {
+            "questions": [
+                {
+                "question": "string",
+                "suggested_answer": "string"
+                }
+            ]
+            }
 
-Correct format example (for reference only, do not copy content):
+            Correct format example (for reference only, do not copy content):
 
-{
-  "questions": [
-    {
-      "question": "What are your specific business needs within IT services that led you to draft an order?",
-      "suggested_answer": "My company requires comprehensive outsourced software development and continuous maintenance for our existing applications."
-    },
-    {
-      "question": "Does the Philippines' legal framework require any specific clauses or terms to be included in your IT outsourcing agreement?",
-      "suggested_answer": "Yes, it is advised that we include a governing law and jurisdiction clause specifying Philippine civil code as applicable."
-    }
-  ]
-}
-</Result>
-
+            {
+                "questions": [
+                    {
+                    "question": "What are your specific business needs within IT services that led you to draft an order?",
+                    "suggested_answer": "My company requires comprehensive outsourced software development and continuous maintenance for our existing applications."
+                    },
+                    {
+                    "question": "Does the Philippines' legal framework require any specific clauses or terms to be included in your IT outsourcing agreement?",
+                    "suggested_answer": "Yes, it is advised that we include a governing law and jurisdiction clause specifying Philippine civil code as applicable."
+                    }
+                ]
+            }
+            </Result>
           `,
         },
         {
