@@ -8,7 +8,7 @@ export interface IFollowupQuestion extends Document {
   key: string;
   questions: {
     question: string;
-    suggested_answer: string;
+    answer: string;
   }[];
   expiresAt: Date; // <-- required for TTL
 }
@@ -28,7 +28,7 @@ const FollowupQuestionSchema: Schema = new Schema(
           required: true,
           trim: true,
         },
-        suggested_answer: {
+        answer: {
           type: String,
           required: true,
           trim: true,

@@ -9,7 +9,10 @@
 
 import { openai } from "@config/app-settings/openai";
 import { zodResponseFormat } from "openai/helpers/zod";
-import { IDocumentsBasicQuestion } from "./documents.types";
+import {
+  IDocumentsBasicQuestion,
+  IDocumentTopicsToAsk,
+} from "./documents.types";
 import { LegalDocumentSchema } from "./documents.zod";
 import { FollowupQuestion } from "./documents.model";
 const commonOpenAiProps = {
@@ -70,71 +73,71 @@ export const GenerateKeyIfNotExist = (ipAddress: string) => {
   });
 };
 
-export const GenerateFollowupQuestionSrv = async (
-  payload: IDocumentsBasicQuestion,
-  key: string
+// export const UpdateGenerateFollowupQuestionSrv = (
+//   payload: Pick<IDocumentsBasicQuestion, "questions">,
+//   key: string
+// ) => {
+//   console.log(payload, " paylaod");
+//   return FollowupQuestion.findOneAndUpdate(
+//     {
+//       key,
+//     },
+//     {
+//       $set: {
+//         questions: payload.questions,
+//       },
+//     },
+//     {
+//       new: true,
+//       upsert: true,
+//     }
+//   );
+// };
+
+export const GenerateBaseQuestionsToAskSrv = async (
+  payload: IDocumentTopicsToAsk
 ) => {
-  console.log("generating followup question srv");
+  const userContent = `
+        You are an AI Legal Document Assistant. Your task is to generate a list of **at least 5 or more distinct topics** for follow-up questions based on the input information.  
+
+        Rules:  
+        1. Respond ONLY in valid JSON with exactly one property:  
+        {
+        "topics": ["topic1", "topic2", ...]
+        }  
+        2. Topics must be distinct and cover different aspects of the information provided.  
+        3. Do NOT include explanations or any text outside of the JSON.  
+
+        Input information:  
+        Type: ${payload.type}  
+        Jurisdiction: ${payload.jurisdiction}  
+        Industry: ${payload.industry}  
+        Other Details: ${payload.otherDetails ?? "N/A"}  
+
+        Example response format:  
+        {
+        "topics": [
+            "Compliance requirements under Philippine law",
+            "Software integration with POS systems",
+            "Data privacy concerns for customer data",
+            "Inventory and order management",
+            "Employee training requirements"
+        ]
+    }
+  `;
+
   try {
     const response = await openai.chat.completions.create({
       messages: [
         {
-          role: "system",
-          content: `You are an AI Legal Document Assistant. 
-            Your purpose is to generate follow-up questions for the information the user provided. 
-
-            **Your Instructions:**
-            1. Generate AT LEAST 5 follow-up questions related to the information provided. 
-            2. For EACH question, create a suggested answer. 
-            3. Respond ONLY in valid JSON — nothing else.
-
-            <Result>
-            STRICTLY respond ONLY in a valid JSON OBJECT with a property "questions" that contains an array of 5 or more objects.  
-            ⚠️ Do not output a single object by itself.  
-            ⚠️ Do not include text outside of the JSON object.  
-
-            The JSON must strictly follow this structure:
-
-            {
-            "questions": [
-                {
-                "question": "string",
-                "suggested_answer": "string"
-                }
-            ]
-            }
-
-            Correct format example (for reference only, do not copy content):
-
-            {
-                "questions": [
-                    {
-                    "question": "What are your specific business needs within IT services that led you to draft an order?",
-                    "suggested_answer": "My company requires comprehensive outsourced software development and continuous maintenance for our existing applications."
-                    },
-                    {
-                    "question": "Does the Philippines' legal framework require any specific clauses or terms to be included in your IT outsourcing agreement?",
-                    "suggested_answer": "Yes, it is advised that we include a governing law and jurisdiction clause specifying Philippine civil code as applicable."
-                    }
-                ]
-            }
-            </Result>
-          `,
-        },
-        {
           role: "user",
-          content: `Please generate a followup question document: ${
-            payload.type
-          }, Jurisdiction: ${payload.jurisdiction} in the industry of ${
-            payload.industry
-          } ${
-            payload.otherDetails ? `Other Details: ${payload.otherDetails}` : ""
-          }`,
+          content: userContent,
         },
       ],
       model: "phi3:mini",
       response_format: { type: "json_object" },
     });
+
     const result = response.choices[0]?.message.content;
 
     return JSON.parse(result);
@@ -146,3 +149,139 @@ export const GenerateFollowupQuestionSrv = async (
     );
   }
 };
+
+export const GenerateFollowupQuestionSrv = async (
+  payload: IDocumentsBasicQuestion,
+  key: string
+) => {
+  const userContent = `Please generate a followup question document: ${
+    payload.type
+  }, Jurisdiction: ${payload.jurisdiction} in the industry of ${
+    payload.industry
+  } ${payload.otherDetails ? `Other Details: ${payload.otherDetails}` : ""}
+          Topic: ${payload.topic}
+          `;
+
+  console.log(userContent, " userContent");
+  try {
+    const response = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI Legal Document Assistant. 
+            Your purpose is to generate ONLY ONE follow-up question for the information the user provided. 
+
+            **Your Instructions:**
+            1. Generate exactly 1 follow-up question related to the information provided.  
+            2. For that question, create a suggested answer.  
+            3. Respond ONLY in valid JSON — nothing else.  
+            4. Do NOT generate a question that is repetitive in content or context with any of the questions already answered below. Even small overlaps in topic are considered repetitive.
+
+            <Result>
+            STRICTLY respond ONLY in a valid JSON OBJECT with these two properties:
+            
+            {
+              "question": "string",
+              "suggested_answer": "string"
+            }
+
+            Correct format example (for reference only, do not copy content):
+            {
+              "question": "What are your specific business needs within IT services that led you to draft an order?",
+              "suggested_answer": "My company requires comprehensive outsourced software development and continuous maintenance for our existing applications."
+            }
+            </Result>
+          `,
+        },
+        {
+          role: "user",
+          content: userContent,
+        },
+      ],
+      model: "phi3:mini",
+      response_format: { type: "json_object" },
+    });
+
+    const result = response.choices[0]?.message.content;
+
+    return JSON.parse(result);
+  } catch (error) {
+    throw new Error(
+      `Failed to get response from DeepSeek: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+};
+
+// export const GenerateFollowupQuestionSrv = async (
+//   payload: IDocumentsBasicQuestion,
+//   key: string
+// ) => {
+//   console.log("generating followup question srv");
+
+//   try {
+//     const response = await openai.chat.completions.create({
+//       model: "gpt-4o-mini", // or your model
+//       messages: [
+//         {
+//           role: "system",
+//           content:
+//             "You are an AI Legal Document Assistant. Generate at least 5 follow-up questions and suggested answers in structured JSON.",
+//         },
+//         {
+//           role: "user",
+//           content: `Generate a follow-up question document:
+//           Type: ${payload.type},
+//           Jurisdiction: ${payload.jurisdiction},
+//           Industry: ${payload.industry}
+//           ${payload.otherDetails ? `Other Details: ${payload.otherDetails}` : ""}`,
+//         },
+//       ],
+//       tools: [
+//         {
+//           type: "function",
+//           function: {
+//             name: "store_followup_questions",
+//             description: "Generate follow-up legal questions and suggested answers",
+//             parameters: {
+//               type: "object",
+//               properties: {
+//                 questions: {
+//                   type: "array",
+//                   minItems: 5,
+//                   items: {
+//                     type: "object",
+//                     properties: {
+//                       question: { type: "string" },
+//                       suggested_answer: { type: "string" },
+//                     },
+//                     required: ["question", "suggested_answer"],
+//                   },
+//                 },
+//               },
+//               required: ["questions"],
+//             },
+//           },
+//         },
+//       ],
+//       tool_choice: { type: "function", function: { name: "store_followup_questions" } },
+//     });
+
+//     // Extract function call result
+//     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+//     if (!toolCall) {
+//       throw new Error("No function call response from model");
+//     }
+
+//     const args = JSON.parse(toolCall.function.arguments);
+
+//     return args; // { questions: [...] }
+//   } catch (error) {
+//     throw new Error(
+//       `Failed to get follow-up questions: ${
+//         error instanceof Error ? error.message : String(error)
+//       }`
+//     );
+//   }
+// };

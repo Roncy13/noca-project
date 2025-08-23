@@ -1,6 +1,9 @@
-export interface IDocumentsBasicQuestion {
+export class IDocumentTopicsToAsk {
   type: "invoice" | "order" | "invitation";
   jurisdiction: string;
   industry: string;
   otherDetails?: string;
+}
+export class IDocumentsBasicQuestion extends IDocumentTopicsToAsk {
+  topic: string;
 }

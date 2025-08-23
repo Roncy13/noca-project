@@ -7,7 +7,7 @@ import { Schema } from "express-validator";
  * In Body just tells that the schema be used in the Body section of the request.
  */
 
-export const DocumentsBasicQuestion: Schema = {
+export const DocumentsTopics: Schema = {
   type: {
     ...inBody,
     notEmpty: {
@@ -32,5 +32,19 @@ export const DocumentsBasicQuestion: Schema = {
   otherDetails: {
     ...inBody,
     optional: true,
+  },
+};
+export const DocumentsBasicQuestion: Schema = {
+  ...DocumentsTopics,
+  questions: {
+    ...inBody,
+    optional: true,
+    isArray: true,
+  },
+  topic: {
+    ...inBody,
+    notEmpty: {
+      errorMessage: "topic is required",
+    },
   },
 };

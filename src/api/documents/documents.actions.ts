@@ -1,12 +1,19 @@
 import SmurfResponse, { SmurfAction } from "@core/response";
 import {
   AskAnyQuestionSrv,
+  GenerateBaseQuestionsToAskSrv,
   GenerateFollowupQuestionSrv,
   GenerateKeyIfNotExist,
 } from "./documents.services";
-import { DocumentsBasicQuestion } from "./documents.validators";
+import {
+  DocumentsBasicQuestion,
+  DocumentsTopics,
+} from "./documents.validators";
 import { Request } from "express";
-import { IDocumentsBasicQuestion } from "./documents.types";
+import {
+  IDocumentsBasicQuestion,
+  IDocumentTopicsToAsk,
+} from "./documents.types";
 import { HTTP_METHODS } from "@utilities/constants";
 
 @SmurfAction({
@@ -20,7 +27,20 @@ export class DocumentsApi extends SmurfResponse {
 }
 
 @SmurfAction({
-  action: "/documents/followupQuestions",
+  action: "/documents/topics",
+  message: "Document followup question generated successfully",
+  validation: DocumentsTopics,
+  method: HTTP_METHODS.POST,
+})
+export class AskTopicsActions extends SmurfResponse {
+  async run(request: Request) {
+    const body = request.body as IDocumentTopicsToAsk;
+    this.result = await GenerateBaseQuestionsToAskSrv(body);
+  }
+}
+
+@SmurfAction({
+  action: "/documents/askFollowupQuestion",
   message: "Document followup question generated successfully",
   validation: DocumentsBasicQuestion,
   method: HTTP_METHODS.POST,
