@@ -9,7 +9,15 @@
 
 import { openai } from "@config/app-settings/openai";
 import { zodResponseFormat } from "openai/helpers/zod";
+import { IDocumentsBasicQuestion } from "./documents.types";
 import { LegalDocumentSchema } from "./documents.zod";
+const commonOpenAiProps = {
+  model: "llama3.1:8b",
+  temperature: 0.1,
+  max_completion_tokens: 4096,
+  top_p: 0.9,
+  frequency_penalty: 1.1, // Similar to repeat_penalty
+};
 const documentContext = `
     You are an expert legal assistant specializing in Philippine Labor Law and the Information Technology industry. Your task is to generate a comprehensive and professionally formatted Employment Contract.
 
@@ -20,6 +28,7 @@ const documentContext = `
     4.  **Clarity:** Use clear, formal, and unambiguous language. Avoid overly complex legal jargon where possible.
     5.  **Title:** Generate a suitable title for the document created
 `;
+
 export const AskAnyQuestionSrv = async () => {
   try {
     const response = await openai.chat.completions.create({
@@ -39,18 +48,90 @@ export const AskAnyQuestionSrv = async () => {
           content: `Please generate a Employee Cotract Agreement for me. Here is the context: ${documentContext}`,
         },
       ],
-      model: "llama3.1:8b",
-      temperature: 0.1,
-      max_completion_tokens: 4096,
-      top_p: 0.9,
-      frequency_penalty: 1.1, // Similar to repeat_penalty
-      // response_format: zodResponseFormat(LegalDocumentSchema, "response"),
+      ...commonOpenAiProps,
+      response_format: zodResponseFormat(LegalDocumentSchema, "response"),
     });
     const result = response.choices[0]?.message?.content;
 
-    return result;
+    return JSON.parse(result);
   } catch (error) {
-    console.error("Error calling DeepSeek API:", error);
+    throw new Error(
+      `Failed to get response from DeepSeek: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+};
+
+export const GenerateFollowupQuestionSrv = async (
+  payload: IDocumentsBasicQuestion
+) => {
+  console.log("generating followup question srv");
+  try {
+    const response = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI Legal Document Assistant. 
+Your purpose is to generate follow-up questions for the information the user provided. 
+
+**Your Instructions:**
+1. Generate AT LEAST 5 follow-up questions related to the information provided. 
+2. For EACH question, create a suggested answer. 
+3. Respond ONLY in valid JSON — nothing else.
+
+<Result>
+STRICTLY respond ONLY in a valid JSON OBJECT with a property "questions" that contains an array of 5 or more objects.  
+⚠️ Do not output a single object by itself.  
+⚠️ Do not include text outside of the JSON object.  
+
+The JSON must strictly follow this structure:
+
+{
+  "questions": [
+    {
+      "question": "string",
+      "suggested_answer": "string"
+    }
+  ]
+}
+
+Correct format example (for reference only, do not copy content):
+
+{
+  "questions": [
+    {
+      "question": "What are your specific business needs within IT services that led you to draft an order?",
+      "suggested_answer": "My company requires comprehensive outsourced software development and continuous maintenance for our existing applications."
+    },
+    {
+      "question": "Does the Philippines' legal framework require any specific clauses or terms to be included in your IT outsourcing agreement?",
+      "suggested_answer": "Yes, it is advised that we include a governing law and jurisdiction clause specifying Philippine civil code as applicable."
+    }
+  ]
+}
+</Result>
+
+          `,
+        },
+        {
+          role: "user",
+          content: `Please generate a followup question document: ${
+            payload.type
+          }, Jurisdiction: ${payload.jurisdiction} in the industry of ${
+            payload.industry
+          } ${
+            payload.otherDetails ? `Other Details: ${payload.otherDetails}` : ""
+          }`,
+        },
+      ],
+      model: "phi3:mini",
+      response_format: { type: "json_object" },
+    });
+    const result = response.choices[0]?.message.content;
+
+    return JSON.parse(result);
+  } catch (error) {
     throw new Error(
       `Failed to get response from DeepSeek: ${
         error instanceof Error ? error.message : String(error)

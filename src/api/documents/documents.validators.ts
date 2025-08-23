@@ -1,5 +1,5 @@
-import { inBody } from '@utilities/constants';
-import { Schema }  from 'express-validator';
+import { inBody } from "@utilities/constants";
+import { Schema } from "express-validator";
 
 /**
  * Change the [sampleFieldName] to the property you are using.
@@ -7,15 +7,30 @@ import { Schema }  from 'express-validator';
  * In Body just tells that the schema be used in the Body section of the request.
  */
 
-export const DocumentsSchema: Schema = {
-  sampleFieldName: {
+export const DocumentsBasicQuestion: Schema = {
+  type: {
     ...inBody,
-    isLength: {
-      errorMessage: 'Field Name should be not less than 1 and not greater than 50 characters',
-      options: {
-        min: 1,
-        max: 50,
-      }
-    }
-  }
+    notEmpty: {
+      errorMessage: "type is required",
+    },
+    isIn: {
+      options: [["invoice", "order", "invitation"]],
+    },
+  },
+  jurisdiction: {
+    ...inBody,
+    notEmpty: {
+      errorMessage: "jurisdiction is required",
+    },
+  },
+  industry: {
+    ...inBody,
+    notEmpty: {
+      errorMessage: "industry is required",
+    },
+  },
+  otherDetails: {
+    ...inBody,
+    optional: true,
+  },
 };
