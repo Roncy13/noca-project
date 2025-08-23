@@ -313,13 +313,23 @@ export const GenerateSectionContentSrv = async (
         
           `;
   const record = await GetHistoryOfDocumentContractSrv(key);
-  console.log(record, " record");
+
   const checkOutlineExist = record?.outline?.findIndex?.(
     (r) => r.no === payload.no
   );
   if (checkOutlineExist >= 0) {
     return record.outline[checkOutlineExist];
   }
+  console.log(record, " record ");
+  const previousContent =
+    record?.outline && record?.outline?.length > 0
+      ? `7. The content to be generated must be contextually aligned with the previously generated sections which is: 
+    <CONTENT>${record.outline
+      .map((r) => formatContent(r).formattedContent)
+      .join(". ")}
+    </CONTENT>`
+      : "";
+  console.log(previousContent, " previousContent ");
   try {
     const response = await openai.chat.completions.create({
       messages: [
@@ -354,15 +364,7 @@ export const GenerateSectionContentSrv = async (
             Or insert neutral placeholders such as [insert company name here].
 
             6. Never invent or introduce actual names or entities unless they are provided.
-            ${
-              record?.outline && record?.outline?.length > 0
-                ? `7. The content to be generated must be contextually aligned with the previously generated sections which is: 
-                <CONTENT>${record.outline
-                  .map((r) => formatContent(r))
-                  .join(". ")}
-                </CONTENT>`
-                : ""
-            }
+            ${previousContent}
             The text must be self-contained, authoritative, and worded as if it belongs in a binding contract or professional report.
             ✅ Expected Output Example:
             {
@@ -399,8 +401,7 @@ export const GenerateSectionContentSrv = async (
       clause: parsedData.clause,
       subClause: parsedData.subClause, // optional array
     };
-    console.log(dataToPushed, " data to pushed ");
-    const historyRecord = await FollowupQuestion.findOneAndUpdate(
+    await FollowupQuestion.findOneAndUpdate(
       {
         key,
       },
@@ -414,7 +415,6 @@ export const GenerateSectionContentSrv = async (
         upsert: true,
       }
     );
-    console.log(historyRecord, " history record ");
     return parsedData;
   } catch (error) {
     throw new Error(

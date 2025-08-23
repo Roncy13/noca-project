@@ -19,23 +19,6 @@ const SectionContentSchema: Schema<ISectionContent> = new Schema({
   subClause: { type: [String], required: false }, // optional array
 });
 
-// Middleware to combine section, clause, and subClause into one string
-
-// Post-find middleware for multiple documents
-SectionContentSchema.post("find", function (docs: ISectionContent[]) {
-  docs.forEach(formatContent);
-});
-
-// Post-findOne middleware for a single document
-SectionContentSchema.post("findOne", function (doc: ISectionContent) {
-  formatContent(doc);
-});
-
-// Optionally include for findOneAndUpdate
-SectionContentSchema.post("findOneAndUpdate", function (doc: ISectionContent) {
-  formatContent(doc);
-});
-
 const FollowupQuestionSchema: Schema = new Schema(
   {
     key: {
