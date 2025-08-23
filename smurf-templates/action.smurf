@@ -1,0 +1,12 @@
+import SmurfResponse, { SmurfAction } from "@core/response";
+
+@SmurfAction({
+  action: '/custom-end-point',
+  message: 'message-action',
+})
+export class SmurfApi extends SmurfResponse {
+
+  async run() {
+    this.result = 'Smurf Api Data';
+  }
+}
