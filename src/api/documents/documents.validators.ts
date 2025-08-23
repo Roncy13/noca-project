@@ -58,4 +58,10 @@ export const DocumentsGenerateClausesContent: Schema = {
     ...inBody,
     notEmpty: "outline is required",
   },
+  no: {
+    ...inBody,
+    notEmpty: true,
+    isInt: true,
+    min: 1,
+  },
 };

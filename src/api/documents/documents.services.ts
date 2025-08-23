@@ -14,9 +14,11 @@ import {
   IDocumentGenerateContent,
   IDocumentsBasicQuestion,
   IDocumentTopicsToAsk,
+  ISectionContent,
 } from "./documents.types";
 import { LegalDocumentSchema } from "./documents.zod";
 import { FollowupQuestion } from "./documents.model";
+import { formatContent } from "./document.utils";
 const commonOpenAiProps = {
   model: "llama3.1:8b",
   temperature: 0.1,
@@ -71,7 +73,7 @@ export const AskAnyQuestionSrv = async () => {
   }
 };
 
-export const GenerateKeyIfNotExist = (ipAddress: string) => {
+export const GetHistoryOfDocumentContractSrv = (ipAddress: string) => {
   return FollowupQuestion.findOne({
     key: ipAddress,
   });
@@ -310,7 +312,14 @@ export const GenerateSectionContentSrv = async (
           Supporting Details: ${payload.supportingDetails}
         
           `;
-
+  const record = await GetHistoryOfDocumentContractSrv(key);
+  console.log(record, " record");
+  const checkOutlineExist = record?.outline?.findIndex?.(
+    (r) => r.no === payload.no
+  );
+  if (checkOutlineExist >= 0) {
+    return record.outline[checkOutlineExist];
+  }
   try {
     const response = await openai.chat.completions.create({
       messages: [
@@ -324,7 +333,7 @@ export const GenerateSectionContentSrv = async (
 
             Respond only in valid JSON — no extra commentary or text outside the JSON.
 
-            The JSON output must be a single object containing the following properties only:
+            1. The JSON output must be a single object containing the following properties only:
 
             "section" → must always be a formal, contract-style title (e.g., “Representations and Warranties of the Parties”, “Confidentiality Obligations”), never a raw description or placeholder heading.
 
@@ -332,20 +341,28 @@ export const GenerateSectionContentSrv = async (
 
             "subClause" → if included, must strictly be an array of strings only, OMIT HYPEN, BULLETS, ASTERISK OR OTHER ITEM SYMBOLS, where each string is a contract-like elaboration written in bullet/hyphen style. If not needed, omit this property entirely.
 
-            No properties other than "section", "clause", and (optional) "subClause" may appear.
+            2. No properties other than "section", "clause", and (optional) "subClause" may appear.
 
-            Both "clause" and "subClause" must be written in a contractual, authoritative tone, resembling enforceable legal agreements or business documentation.
+            3. Both "clause" and "subClause" must be written in a contractual, authoritative tone, resembling enforceable legal agreements or business documentation.
 
-            The values for "section" and "clause" must be strings only; "subClause" must be an array of strings only.
+            4. The values for "section" and "clause" must be strings only; "subClause" must be an array of strings only.
 
-            Replace all full names, signatories, dates, companies, items, or proper nouns with placeholders unless explicitly stated in the outline. Use the format:
+            5. Replace all full names, signatories, dates, companies, items, or proper nouns with placeholders unless explicitly stated in the outline. Use the format:
 
             [NAME], [SIGNATORY], [SIGNED_DATE], [COMPANY], [ITEM], etc.
 
             Or insert neutral placeholders such as [insert company name here].
 
-            Never invent or introduce actual names or entities unless they are provided.
-
+            6. Never invent or introduce actual names or entities unless they are provided.
+            ${
+              record?.outline && record?.outline?.length > 0
+                ? `7. The content to be generated must be contextually aligned with the previously generated sections which is: 
+                <CONTENT>${record.outline
+                  .map((r) => formatContent(r))
+                  .join(". ")}
+                </CONTENT>`
+                : ""
+            }
             The text must be self-contained, authoritative, and worded as if it belongs in a binding contract or professional report.
             ✅ Expected Output Example:
             {
@@ -375,7 +392,30 @@ export const GenerateSectionContentSrv = async (
 
     const result = response.choices[0]?.message.content;
 
-    return JSON.parse(result);
+    const parsedData = JSON.parse(result) as ISectionContent;
+    const dataToPushed = {
+      no: payload.no,
+      section: parsedData.section,
+      clause: parsedData.clause,
+      subClause: parsedData.subClause, // optional array
+    };
+    console.log(dataToPushed, " data to pushed ");
+    const historyRecord = await FollowupQuestion.findOneAndUpdate(
+      {
+        key,
+      },
+      {
+        $push: {
+          outline: dataToPushed,
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+      }
+    );
+    console.log(historyRecord, " history record ");
+    return parsedData;
   } catch (error) {
     throw new Error(
       `Failed to get response from DeepSeek: ${

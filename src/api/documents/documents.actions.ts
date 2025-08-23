@@ -4,7 +4,7 @@ import {
   GenerateBaseQuestionsToAskSrv,
   GenerateDraftSrv,
   GenerateFollowupQuestionSrv,
-  GenerateKeyIfNotExist,
+  GetHistoryOfDocumentContractSrv,
   GenerateSectionContentSrv,
 } from "./documents.services";
 import {
@@ -94,6 +94,6 @@ export class AskingBasQuestionsAction extends SmurfResponse {
 export class DocumentGetSessionAction extends SmurfResponse {
   async run(request: Request) {
     const ipAddress = request.ip;
-    this.result = await GenerateKeyIfNotExist(ipAddress);
+    this.result = await GetHistoryOfDocumentContractSrv(ipAddress);
   }
 }
