@@ -45,9 +45,17 @@ export const DocumentsBasicQuestion: Schema = {
 };
 
 export const DocumentsGenerateClauses: Schema = {
-  ...DocumentsBasicQuestion,
+  ...DocumentsTopics,
   supportingDetails: {
     ...inBody,
     notEmpty: "supportingDetails is required",
+  },
+};
+
+export const DocumentsGenerateClausesContent: Schema = {
+  ...DocumentsGenerateClauses,
+  outline: {
+    ...inBody,
+    notEmpty: "outline is required",
   },
 };

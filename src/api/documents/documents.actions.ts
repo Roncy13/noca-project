@@ -5,14 +5,17 @@ import {
   GenerateDraftSrv,
   GenerateFollowupQuestionSrv,
   GenerateKeyIfNotExist,
+  GenerateSectionContentSrv,
 } from "./documents.services";
 import {
   DocumentsBasicQuestion,
+  DocumentsGenerateClausesContent,
   DocumentsTopics,
 } from "./documents.validators";
 import { Request } from "express";
 import {
   IDocumentDraftClauses,
+  IDocumentGenerateContent,
   IDocumentsBasicQuestion,
   IDocumentTopicsToAsk,
 } from "./documents.types";
@@ -25,6 +28,20 @@ import { HTTP_METHODS } from "@utilities/constants";
 export class DocumentsApi extends SmurfResponse {
   async run() {
     this.result = await AskAnyQuestionSrv();
+  }
+}
+
+@SmurfAction({
+  action: "/documents/generateSectionContent",
+  message: "Document generated content successfully",
+  validation: DocumentsGenerateClausesContent,
+  method: HTTP_METHODS.POST,
+})
+export class generateSectionContentActions extends SmurfResponse {
+  async run(request: Request) {
+    const body = request.body as IDocumentGenerateContent;
+    const ipAddress = request.ip;
+    this.result = await GenerateSectionContentSrv(body, ipAddress);
   }
 }
 

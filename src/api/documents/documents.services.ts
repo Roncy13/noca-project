@@ -11,6 +11,7 @@ import { openai } from "@config/app-settings/openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import {
   IDocumentDraftClauses,
+  IDocumentGenerateContent,
   IDocumentsBasicQuestion,
   IDocumentTopicsToAsk,
 } from "./documents.types";
@@ -273,6 +274,80 @@ export const GenerateDraftSrv = async (
           content: userContent,
         },
       ],
+      model: "phi3:mini",
+      response_format: { type: "json_object" },
+    });
+
+    const result = response.choices[0]?.message.content;
+
+    return JSON.parse(result);
+  } catch (error) {
+    throw new Error(
+      `Failed to get response from DeepSeek: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+};
+
+export const GenerateSectionContentSrv = async (
+  payload: IDocumentGenerateContent,
+  key: string
+) => {
+  const userContent = `Please create me a content for section: ${
+    payload.outline
+  } of ${payload.type}, Jurisdiction: ${
+    payload.jurisdiction
+  } in the industry of ${payload.industry} ${
+    payload.otherDetails ? `Other Details: ${payload.otherDetails}` : ""
+  }
+          Topic: ${payload.topic}
+          Supporting Details: ${payload.supportingDetails}
+        
+          `;
+
+  try {
+    const response = await openai.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI Legal Document Assistant.  
+            Your task is to generate **professional, legalized, and verbosed content** for one document section based on the outline provided.  
+
+            ⚠️ RULES:
+            1. Respond ONLY in valid JSON — nothing else.  
+            2. The JSON must be a single object with these properties:
+            - "section": the name of the section being drafted.  
+            - "clause": the full, professional, legalized text for that section.
+            - "subClause": an array of extended explanations (bullet/hyphen style breakdowns, written in formal/legal style).
+            3. The JSON must contain only the properties "section", "clause", and (if applicable) "subClause", which should be omitted if not needed, with no other properties allowed.
+            4. The "clause" and "subClause" must be written in a **formal, contract-like tone**, with comprehensive, verbose language that would resemble actual legal or business documentation.  
+            5. The values for "section" and "clause" must be strings only, while "subClause", if provided, must be an array of strings.
+           
+            6. Generate placeholders for full names, signatories, dates, and other required details in the format <NAME> <SIGNATORY> <SIGNED_DATE>, or use generic text such as insert company name here when appropriate. Include placeholders within the content wherever necessary.
+            7. The text should be **self-contained, authoritative, and worded in a manner consistent with enforceable agreements or professional reports**.  
+
+            ### Expected Output Format:
+            {
+                "section": "Header: Company Logo, Company Name & Contact Information (Address, Phone, Email, Website), Document Title, Document Number, Document Date",
+                "clause": "This Document, hereinafter referred to as the 'Agreement,' is duly issued and executed by Philippine Innovative Tech Solutions, a duly registered corporation under the laws of the Republic of the Philippines, with its principal office located at 123 Makati Avenue, Makati City, Metro Manila, Philippines. The Company hereby affixes its corporate insignia and other identifying marks for the purpose of establishing authenticity. The Agreement is denominated as 'Service Engagement Agreement,' formally bearing Document Number 2025-0147, and is dated this 23rd day of August, 2025. All details set forth herein shall be deemed official and binding upon acknowledgment and acceptance by the concerned parties.",
+                "subClause": [
+                    "Company Identification: Philippine Innovative Tech Solutions is duly incorporated and recognized by the Securities and Exchange Commission (SEC), maintaining active status and compliance with all corporate regulatory requirements.",
+                    "Principal Office: The registered business address of the Company is 123 Makati Avenue, Makati City, Metro Manila, Philippines, which shall serve as the primary location for official correspondence, notices, and legal service of documents.",
+                    "Communication Channels: The Company may be reached via Telephone No. (+63) 2-8123-4567 and through its official Email Address: legal@pitsolutions.com. All formal communications shall be directed to these channels unless otherwise agreed in writing.",
+                    "Document Title & Number: This Agreement is formally titled 'Service Engagement Agreement,' recorded and cataloged under Document Number 2025-0147, for precise identification, retrieval, and archival purposes.",
+                    "Execution Date: The Agreement is issued and shall take effect on the 23rd day of August, 2025, from which all rights, obligations, and responsibilities of the parties shall commence."
+                ]
+            }
+
+          `,
+        },
+        {
+          role: "user",
+          content: userContent,
+        },
+      ],
+      // model: "llama3.1:8b",
       model: "phi3:mini",
       response_format: { type: "json_object" },
     });

@@ -11,3 +11,7 @@ export class IDocumentsBasicQuestion extends IDocumentTopicsToAsk {
 export class IDocumentDraftClauses extends IDocumentsBasicQuestion {
   supportingDetails: string;
 }
+
+export class IDocumentGenerateContent extends IDocumentDraftClauses {
+  outline: string;
+}
