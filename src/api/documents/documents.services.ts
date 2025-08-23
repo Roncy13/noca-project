@@ -35,6 +35,8 @@ const documentContext = `
     5.  **Title:** Generate a suitable title for the document created
 `;
 
+const IMPORTANT_NOTE = `!!!IMPORTANT: Respond ONLY with valid JSON`;
+
 export const AskAnyQuestionSrv = async () => {
   try {
     const response = await openai.chat.completions.create({
@@ -118,14 +120,15 @@ export const GenerateBaseQuestionsToAskSrv = async (
 
         Example response format:  
         {
-        "topics": [
-            "Compliance requirements under Philippine law",
-            "Software integration with POS systems",
-            "Data privacy concerns for customer data",
-            "Inventory and order management",
-            "Employee training requirements"
-        ]
-    }
+            "topics": [
+                "Compliance requirements under Philippine law",
+                "Software integration with POS systems",
+                "Data privacy concerns for customer data",
+                "Inventory and order management",
+                "Employee training requirements"
+            ]
+        }
+        ${IMPORTANT_NOTE}
   `;
 
   try {
@@ -191,6 +194,7 @@ export const GenerateFollowupQuestionSrv = async (
               "suggested_answer": "My company requires comprehensive outsourced software development and continuous maintenance for our existing applications."
             }
             </Result>
+            ${IMPORTANT_NOTE}
           `,
         },
         {
@@ -267,6 +271,7 @@ export const GenerateDraftSrv = async (
                     "Footer: Legal disclaimers or terms & conditions, Contact for document queries"
                 ]
             }
+            ${IMPORTANT_NOTE}
           `,
         },
         {
@@ -311,35 +316,51 @@ export const GenerateSectionContentSrv = async (
       messages: [
         {
           role: "system",
-          content: `You are an AI Legal Document Assistant.  
-            Your task is to generate **professional, legalized, and verbosed content** for one document section based on the outline provided.  
+          content: `
+            You are an AI Legal Document Assistant.
+            Your role is to generate professional, formal, and verbose legal content for one document section based on the provided outline.
 
-            ⚠️ RULES:
-            1. Respond ONLY in valid JSON — nothing else.  
-            2. The JSON must be a single object with these properties:
-            - "section": the name of the section being drafted.  
-            - "clause": the full, professional, legalized text for that section.
-            - "subClause": an array of extended explanations (bullet/hyphen style breakdowns, written in formal/legal style).
-            3. The JSON must contain only the properties "section", "clause", and (if applicable) "subClause", which should be omitted if not needed, with no other properties allowed.
-            4. The "clause" and "subClause" must be written in a **formal, contract-like tone**, with comprehensive, verbose language that would resemble actual legal or business documentation.  
-            5. The values for "section" and "clause" must be strings only, while "subClause", if provided, must be an array of strings.
-           
-            6. Generate placeholders for full names, signatories, dates, and other required details in the format <NAME> <SIGNATORY> <SIGNED_DATE>, or use generic text such as insert company name here when appropriate. Include placeholders within the content wherever necessary.
-            7. The text should be **self-contained, authoritative, and worded in a manner consistent with enforceable agreements or professional reports**.  
+            ⚖️ Rules and Requirements:
 
-            ### Expected Output Format:
+            Respond only in valid JSON — no extra commentary or text outside the JSON.
+
+            The JSON output must be a single object containing the following properties only:
+
+            "section" → must always be a formal, contract-style title (e.g., “Representations and Warranties of the Parties”, “Confidentiality Obligations”), never a raw description or placeholder heading.
+
+            "clause" → must always be a single string containing the full, professional, legalized language for that section.
+
+            "subClause" → if included, must strictly be an array of strings only, OMIT HYPEN, BULLETS, ASTERISK OR OTHER ITEM SYMBOLS, where each string is a contract-like elaboration written in bullet/hyphen style. If not needed, omit this property entirely.
+
+            No properties other than "section", "clause", and (optional) "subClause" may appear.
+
+            Both "clause" and "subClause" must be written in a contractual, authoritative tone, resembling enforceable legal agreements or business documentation.
+
+            The values for "section" and "clause" must be strings only; "subClause" must be an array of strings only.
+
+            Replace all full names, signatories, dates, companies, items, or proper nouns with placeholders unless explicitly stated in the outline. Use the format:
+
+            [NAME], [SIGNATORY], [SIGNED_DATE], [COMPANY], [ITEM], etc.
+
+            Or insert neutral placeholders such as [insert company name here].
+
+            Never invent or introduce actual names or entities unless they are provided.
+
+            The text must be self-contained, authoritative, and worded as if it belongs in a binding contract or professional report.
+            ✅ Expected Output Example:
             {
-                "section": "Header: Company Logo, Company Name & Contact Information (Address, Phone, Email, Website), Document Title, Document Number, Document Date",
-                "clause": "This Document, hereinafter referred to as the 'Agreement,' is duly issued and executed by Philippine Innovative Tech Solutions, a duly registered corporation under the laws of the Republic of the Philippines, with its principal office located at 123 Makati Avenue, Makati City, Metro Manila, Philippines. The Company hereby affixes its corporate insignia and other identifying marks for the purpose of establishing authenticity. The Agreement is denominated as 'Service Engagement Agreement,' formally bearing Document Number 2025-0147, and is dated this 23rd day of August, 2025. All details set forth herein shall be deemed official and binding upon acknowledgment and acceptance by the concerned parties.",
+                "section": "Formal Header and Identifying Information of the Agreement",
+                "clause": "The formal header of the Agreement shall incorporate the Company’s insignia, registered business name, official contact details, document title, reference number, and date of issuance, all of which collectively establish the identity, authenticity, and traceability of the Agreement within business and legal records of the parties concerned.",
                 "subClause": [
-                    "Company Identification: Philippine Innovative Tech Solutions is duly incorporated and recognized by the Securities and Exchange Commission (SEC), maintaining active status and compliance with all corporate regulatory requirements.",
-                    "Principal Office: The registered business address of the Company is 123 Makati Avenue, Makati City, Metro Manila, Philippines, which shall serve as the primary location for official correspondence, notices, and legal service of documents.",
-                    "Communication Channels: The Company may be reached via Telephone No. (+63) 2-8123-4567 and through its official Email Address: legal@pitsolutions.com. All formal communications shall be directed to these channels unless otherwise agreed in writing.",
-                    "Document Title & Number: This Agreement is formally titled 'Service Engagement Agreement,' recorded and cataloged under Document Number 2025-0147, for precise identification, retrieval, and archival purposes.",
-                    "Execution Date: The Agreement is issued and shall take effect on the 23rd day of August, 2025, from which all rights, obligations, and responsibilities of the parties shall commence."
+                    "Corporate Markings: The Company shall display its official logo and insignia, which form part of its recognized corporate identity.",
+                    "Registered Identification: The business name of [COMPANY] shall be expressly stated, in accordance with its registration under Philippine law.",
+                    "Official Communication Channels: The Company’s address, telephone, email, and other designated communication lines shall be reflected for purposes of notice and correspondence.",
+                    "Document Reference: The title, number, and issuance date of this Agreement shall be clearly indicated to ensure enforceability, accurate filing, and retrieval.",
+                    "Authenticity Assurance: The header shall serve as prima facie proof of the Agreement’s origin and validity, binding the parties hereto."
                 ]
             }
 
+            ${IMPORTANT_NOTE}
           `,
         },
         {
@@ -347,8 +368,8 @@ export const GenerateSectionContentSrv = async (
           content: userContent,
         },
       ],
-      // model: "llama3.1:8b",
-      model: "phi3:mini",
+      model: "llama3.1:8b",
+      // model: "phi3:mini",
       response_format: { type: "json_object" },
     });
 
