@@ -18,8 +18,9 @@ const documentContext = `
     2.  **IT Industry Specifics:** Include clauses relevant to IT professionals, such as: Data Privacy and Confidentiality (aligned with the Philippine Data Privacy Act of 2012), Intellectual Property ownership for work product, non-compete agreements (within reasonable limits enforceable by Philippine law), and clear terms on provision and use of company-owned technology equipment.
     3.  **Structure & Format:** Generate the complete contract using clear Markdown formatting. Use headings, bullet points, bold text for important terms, and placeholders in [square brackets] for user-specific details (e.g., [Company Name], [Employee Name], [Exact Monthly Salary in PHP]).
     4.  **Clarity:** Use clear, formal, and unambiguous language. Avoid overly complex legal jargon where possible.
+    5.  **Title:** Generate a suitable title for the document created
 `;
-export const AskAnyQuestionSrv = async (): Promise<object> => {
+export const AskAnyQuestionSrv = async () => {
   try {
     const response = await openai.chat.completions.create({
       messages: [
@@ -43,11 +44,11 @@ export const AskAnyQuestionSrv = async (): Promise<object> => {
       max_completion_tokens: 4096,
       top_p: 0.9,
       frequency_penalty: 1.1, // Similar to repeat_penalty
-      response_format: zodResponseFormat(LegalDocumentSchema, "response"),
+      // response_format: zodResponseFormat(LegalDocumentSchema, "response"),
     });
     const result = response.choices[0]?.message?.content;
 
-    return JSON.parse(result);
+    return result;
   } catch (error) {
     console.error("Error calling DeepSeek API:", error);
     throw new Error(
