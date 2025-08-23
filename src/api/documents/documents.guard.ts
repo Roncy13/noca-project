@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 /**
  * Example Guard Controller for Smurf
  */
-export const RolesGuard = (req: Request, res: Response, next: any) => {
+export const DocumentsGuard = (req: Request, res: Response, next: any) => {
   // tslint:disable-next-line:no-console
   console.log('Implement like Policy Sample in user, difference is it will just be execute first before validation and policies');
 
