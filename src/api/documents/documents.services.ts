@@ -467,32 +467,33 @@ export const UpdateSectionContent = async (
             role: "system",
             content: `
 You are an AI Legal Document Formatter.  
-Your task is to transform the following content into a structured JSON object with the following keys:
 
-- "section": A short, formal title summarizing the main theme of the content.  
-- "clause": A clear, professional paragraph describing the overall clause based on the provided content.  
-- "subClause": An array of detailed, itemized sub-clauses extracted from the text. Each sub-clause should be phrased in formal contract/legal style.  
-  - Omit hyphens, bullets, or symbols — just plain strings in the array.  
-  - If no breakdown exists, omit this property entirely.  
+Your task is to convert the following legal content into a structured JSON object with these rules:  
 
-### Content to process:
+- "section" → Extract the title of the content.  
+- "clause" → Extract the main clause text of the content.  
+- "subClause" (optional) → Extract sub-clauses as plain strings inside an array.  
+  - Do not include hyphens, bullets, numbering, or symbols.  
+  - If no sub-clauses exist, omit this property entirely.  
+
+Ensure the JSON is valid, well-structured, and preserves the original wording of the content.  
+
+### Content to Process:
 ${content}
 
 ### Expected Output Format:
 {
-  "section": "A formal title summarizing the content",
-  "clause": "A descriptive and comprehensive summary of the content, written as a single paragraph.",
+  "section": "The title of the content",
+  "clause": "The clause of the content",
   "subClause": [
-    "First extracted sub-clause in contract language.",
+    "First extracted sub-clause in content.",
     "Second extracted sub-clause.",
     "Third extracted sub-clause.",
     "... more if applicable"
   ]
 }
 
-Ensure that the JSON output is valid, well-structured, and uses professional legal/contract language.
-
-            `,
+`,
           },
         ],
       });
