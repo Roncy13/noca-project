@@ -13,9 +13,6 @@ export const DocumentsTopics: Schema = {
     notEmpty: {
       errorMessage: "type is required",
     },
-    isIn: {
-      options: [["invoice", "order", "invitation"]],
-    },
   },
   jurisdiction: {
     ...inBody,

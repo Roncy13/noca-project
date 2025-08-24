@@ -320,7 +320,6 @@ export const GenerateSectionContentSrv = async (
   if (checkOutlineExist >= 0) {
     return record.outline[checkOutlineExist];
   }
-  console.log(record, " record ");
   const previousContent =
     record?.outline && record?.outline?.length > 0
       ? `7. The content to be generated must be contextually aligned with the previously generated sections which is: 
@@ -329,13 +328,15 @@ export const GenerateSectionContentSrv = async (
       .join(". ")}
     </CONTENT>`
       : "";
-  console.log(previousContent, " previousContent ");
   try {
-    const response = await openai.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: `
+    let parsedData: ISectionContent;
+
+    do {
+      const response = await openai.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: `
             You are an AI Legal Document Assistant.
             Your role is to generate professional, formal, and verbose legal content for one document section based on the provided outline.
 
@@ -347,10 +348,10 @@ export const GenerateSectionContentSrv = async (
 
             "section" → must always be a formal, contract-style title (e.g., “Representations and Warranties of the Parties”, “Confidentiality Obligations”), never a raw description or placeholder heading.
 
-            "clause" → must always be a single string containing the full, professional, legalized language for that section.
+            "clause" → must always be a single, continuous paragraph containing the professional, legalized language for that section. This paragraph should summarize the entire obligation or provision without internal bullets, numbering, or itemizations.
 
-            "subClause" → if included, must strictly be an array of strings only, OMIT HYPEN, BULLETS, ASTERISK OR OTHER ITEM SYMBOLS, where each string is a contract-like elaboration written in bullet/hyphen style. If not needed, omit this property entirely.
-
+            "subClause" → only if needed. If the clause contains any enumerations, breakdowns, itemizations, or illustrative lists (e.g., roman numerals, numbers, letters, or semicolon-separated items), move each into "subClause" as a separate string. Omit hyphens, bullets, or symbols — just plain strings in an array. If no breakdown exists, omit this property.
+            
             2. No properties other than "section", "clause", and (optional) "subClause" may appear.
 
             3. Both "clause" and "subClause" must be written in a contractual, authoritative tone, resembling enforceable legal agreements or business documentation.
@@ -381,20 +382,26 @@ export const GenerateSectionContentSrv = async (
 
             ${IMPORTANT_NOTE}
           `,
-        },
-        {
-          role: "user",
-          content: userContent,
-        },
-      ],
-      model: "llama3.1:8b",
-      // model: "phi3:mini",
-      response_format: { type: "json_object" },
-    });
+          },
+          {
+            role: "user",
+            content: userContent,
+          },
+        ],
+        model: "llama3.1:8b",
+        // model: "phi3:mini",
+        response_format: { type: "json_object" },
+      });
 
-    const result = response.choices[0]?.message.content;
+      const result = response.choices[0]?.message.content;
 
-    const parsedData = JSON.parse(result) as ISectionContent;
+      try {
+        parsedData = JSON.parse(result) as ISectionContent;
+      } catch {
+        parsedData = undefined;
+      }
+    } while (parsedData === undefined);
+
     const dataToPushed = {
       no: payload.no,
       section: parsedData.section,

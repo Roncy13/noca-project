@@ -4,7 +4,6 @@
 
 import mongoose, { Schema, Document } from "mongoose";
 import { ISectionContent } from "./documents.types";
-import { formatContent } from "./document.utils";
 
 export interface IFollowupQuestion extends Document {
   key: string;
