@@ -66,7 +66,7 @@ export const AskAnyQuestionSrv = async () => {
     return JSON.parse(result);
   } catch (error) {
     throw new Error(
-      `Failed to get response from DeepSeek: ${
+      `Failed to get response from AI: ${
         error instanceof Error ? error.message : String(error)
       }`
     );
@@ -167,7 +167,7 @@ export const GenerateBaseQuestionsToAskSrv = async (
     return JSON.parse(result);
   } catch (error) {
     throw new Error(
-      `Failed to get response from DeepSeek: ${
+      `Failed to get response from AI: ${
         error instanceof Error ? error.message : String(error)
       }`
     );
@@ -230,7 +230,7 @@ export const GenerateFollowupQuestionSrv = async (
     return JSON.parse(result);
   } catch (error) {
     throw new Error(
-      `Failed to get response from DeepSeek: ${
+      `Failed to get response from AI: ${
         error instanceof Error ? error.message : String(error)
       }`
     );
@@ -307,7 +307,7 @@ export const GenerateDraftSrv = async (
     return JSON.parse(result);
   } catch (error) {
     throw new Error(
-      `Failed to get response from DeepSeek: ${
+      `Failed to get response from AI: ${
         error instanceof Error ? error.message : String(error)
       }`
     );
@@ -442,7 +442,88 @@ export const GenerateSectionContentSrv = async (
     return parsedData;
   } catch (error) {
     throw new Error(
-      `Failed to get response from DeepSeek: ${
+      `Failed to get response from AI: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+};
+
+export const UpdateSectionContent = async (
+  content: string,
+  index: number,
+  key: string
+) => {
+  try {
+    let parsedData: ISectionContent | undefined;
+
+    // Keep retrying until valid JSON is parsed
+    do {
+      const response = await openai.chat.completions.create({
+        model: "llama3.1:8b", // or whichever model you prefer
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `
+You are an AI Legal Document Formatter.  
+Your task is to transform the following content into a structured JSON object with the following keys:
+
+- "section": A short, formal title summarizing the main theme of the content.  
+- "clause": A clear, professional paragraph describing the overall clause based on the provided content.  
+- "subClause": An array of detailed, itemized sub-clauses extracted from the text. Each sub-clause should be phrased in formal contract/legal style.  
+  - Omit hyphens, bullets, or symbols — just plain strings in the array.  
+  - If no breakdown exists, omit this property entirely.  
+
+### Content to process:
+${content}
+
+### Expected Output Format:
+{
+  "section": "A formal title summarizing the content",
+  "clause": "A descriptive and comprehensive summary of the content, written as a single paragraph.",
+  "subClause": [
+    "First extracted sub-clause in contract language.",
+    "Second extracted sub-clause.",
+    "Third extracted sub-clause.",
+    "... more if applicable"
+  ]
+}
+
+Ensure that the JSON output is valid, well-structured, and uses professional legal/contract language.
+
+            `,
+          },
+        ],
+      });
+
+      const result = response.choices[0]?.message?.content;
+
+      try {
+        parsedData = JSON.parse(result || "{}") as ISectionContent;
+      } catch {
+        parsedData = undefined;
+      }
+    } while (!parsedData);
+
+    // Format the content before updating
+    const formatted = formatContent(parsedData);
+
+    // Update outline at specific index
+    await FollowupQuestion.findOneAndUpdate(
+      { key },
+      {
+        $set: {
+          [`outline.${index}`]: formatted,
+        },
+      },
+      { new: true }
+    );
+
+    return parsedData;
+  } catch (error) {
+    throw new Error(
+      `Failed to update section content: ${
         error instanceof Error ? error.message : String(error)
       }`
     );

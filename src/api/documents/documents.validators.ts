@@ -73,3 +73,18 @@ export const DocumentsGenerateClausesContent: Schema = {
     min: 1,
   },
 };
+
+export const DocumentUpdateContentValidation: Schema = {
+  content: {
+    ...inBody,
+    notEmpty: "content is required",
+  },
+  index: {
+    ...inBody,
+    notEmpty: true,
+    isInt: {
+      options: { min: 0 },
+      errorMessage: "index must be an integer greater than or equal to 0",
+    },
+  },
+};

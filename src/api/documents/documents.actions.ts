@@ -13,6 +13,7 @@ import {
   GenerateSectionContentSrv,
   GetHistoryOfDocumentContractSrv,
   UpdateLogoFontSrv,
+  UpdateSectionContent,
 } from "./documents.services";
 import {
   IDocumentDraftClauses,
@@ -24,6 +25,7 @@ import {
   DocumentsBasicQuestion,
   DocumentsGenerateClausesContent,
   DocumentsTopics,
+  DocumentUpdateContentValidation,
   SaveDocumentPrintActionValidation,
 } from "./documents.validators";
 
@@ -154,5 +156,21 @@ export class DocumentPrintAction extends PdfResponse {
 
     response.contentType("application/pdf");
     response.send(pdfBuffer);
+  }
+}
+
+@SmurfAction({
+  action: "/documents/updateContent",
+  message: "Document Print Successfully",
+  method: HTTP_METHODS.POST,
+  validation: DocumentUpdateContentValidation,
+})
+export class DocumentUpdateContent extends SmurfResponse {
+  async run(request: Request): Promise<void> {
+    this.result = await UpdateSectionContent(
+      request.body.content,
+      request.body.index,
+      request.ip
+    );
   }
 }
