@@ -96,26 +96,6 @@ export const UpdateLogoFontSrv = (
     }
   );
 };
-// export const UpdateGenerateFollowupQuestionSrv = (
-//   payload: Pick<IDocumentsBasicQuestion, "questions">,
-//   key: string
-// ) => {
-//   console.log(payload, " paylaod");
-//   return FollowupQuestion.findOneAndUpdate(
-//     {
-//       key,
-//     },
-//     {
-//       $set: {
-//         questions: payload.questions,
-//       },
-//     },
-//     {
-//       new: true,
-//       upsert: true,
-//     }
-//   );
-// };
 
 export const GenerateBaseQuestionsToAskSrv = async (
   payload: IDocumentTopicsToAsk
@@ -466,34 +446,33 @@ export const UpdateSectionContent = async (
           {
             role: "system",
             content: `
-You are an AI Legal Document Formatter.  
+              You are an AI Legal Document Formatter.  
 
-Your task is to convert the following legal content into a structured JSON object with these rules:  
+              Your task is to convert the following legal content into a structured JSON object with these rules:  
 
-- "section" → Extract the title of the content.  
-- "clause" → Extract the main clause text of the content.  
-- "subClause" (optional) → Extract sub-clauses as plain strings inside an array.  
-  - Do not include hyphens, bullets, numbering, or symbols.  
-  - If no sub-clauses exist, omit this property entirely.  
+              - "section" → Extract the title of the content.  
+              - "clause" → Extract the main clause text of the content.  
+              - "subClause" (optional) → Extract sub-clauses as plain strings inside an array.  
+                - Do not include hyphens, bullets, numbering, or symbols.  
+                - If no sub-clauses exist, omit this property entirely.  
 
-Ensure the JSON is valid, well-structured, and preserves the original wording of the content.  
+              Ensure the JSON is valid, well-structured, and preserves the original wording of the content.  
 
-### Content to Process:
-${content}
+              ### Content to Process:
+              ${content}
 
-### Expected Output Format:
-{
-  "section": "The title of the content",
-  "clause": "The clause of the content",
-  "subClause": [
-    "First extracted sub-clause in content.",
-    "Second extracted sub-clause.",
-    "Third extracted sub-clause.",
-    "... more if applicable"
-  ]
-}
-
-`,
+              ### Expected Output Format:
+              {
+                "section": "The title of the content",
+                "clause": "The clause of the content",
+                "subClause": [
+                  "First extracted sub-clause in content.",
+                  "Second extracted sub-clause.",
+                  "Third extracted sub-clause.",
+                  "... more if applicable"
+                ]
+              }
+            `,
           },
         ],
       });
