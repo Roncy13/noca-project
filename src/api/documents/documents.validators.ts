@@ -49,6 +49,17 @@ export const DocumentsGenerateClauses: Schema = {
   },
 };
 
+export const SaveDocumentPrintActionValidation: Schema = {
+  logo: {
+    ...inBody,
+    notEmpty: "logo is required",
+  },
+  font: {
+    ...inBody,
+    notEmpty: "font is required",
+  },
+};
+
 export const DocumentsGenerateClausesContent: Schema = {
   ...DocumentsGenerateClauses,
   outline: {

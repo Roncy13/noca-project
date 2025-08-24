@@ -21,22 +21,27 @@ export function formatContent(doc: ISectionContent) {
   return doc;
 }
 
-export const renderClauseHTML = (data: ISectionContent, index: number) => {
+export const renderClauseHTML = (
+  data: ISectionContent,
+  index: number,
+  font: string
+) => {
   const { section, clause, subClause } = data;
 
   // Convert subClauses into HTML list items
   const subClauseHTML = subClause
     .map(
-      (item) => `<li><p style="margin:0;">${item}</p></li>` // inline style to keep spacing consistent
+      (item) =>
+        `<li><p style="margin:0; line-height:1.5; text-align:justify;">${item}</p></li>`
     )
     .join("");
 
-  // Combine everything into one HTML string
+  // Wrap everything with font + line spacing + justification
   const htmlString = `
-    <div>
-      <h3>Section ${index + 1}: ${section}</h3>
-      <p>${clause}</p>
-      <ul>
+    <div style="font-family: ${font}, sans-serif; line-height: 1.5; text-align: justify;">
+      <h3 style="margin-bottom: 8px;">Section ${index + 1}: ${section}</h3>
+      <p style="margin-bottom: 8px;">${clause}</p>
+      <ul style="padding-left: 20px; margin: 0;">
         ${subClauseHTML}
       </ul>
     </div>
@@ -44,3 +49,16 @@ export const renderClauseHTML = (data: ISectionContent, index: number) => {
 
   return htmlString;
 };
+
+export const generateLogo = (
+  logoBase64: string,
+  altText: string = "Company Logo"
+) => `
+  <div style="text-align: center; margin-bottom: 10px;">
+    <img 
+      src="${logoBase64}" 
+      alt="${altText}" 
+      style="max-width: 200px; height: auto;" 
+    />
+  </div>
+`;

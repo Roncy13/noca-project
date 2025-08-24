@@ -9,6 +9,8 @@ export interface IFollowupQuestion extends Document {
   key: string;
   outline: ISectionContent[];
   expiresAt: Date; // <-- required for TTL
+  logo: string;
+  font: string;
 }
 
 const SectionContentSchema: Schema<ISectionContent> = new Schema({
@@ -30,6 +32,14 @@ const FollowupQuestionSchema: Schema = new Schema(
       type: [SectionContentSchema],
       required: false,
       default: [],
+    },
+    logo: {
+      type: String,
+      required: false,
+    },
+    font: {
+      type: String,
+      required: false,
     },
   },
   {

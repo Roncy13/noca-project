@@ -4,7 +4,7 @@ import htmlToPdf from "html-pdf-node";
 
 import { HTTP_METHODS } from "@utilities/constants";
 import { Request } from "express";
-import { renderClauseHTML } from "./document.utils";
+import { generateLogo, renderClauseHTML } from "./document.utils";
 import {
   AskAnyQuestionSrv,
   GenerateBaseQuestionsToAskSrv,
@@ -12,6 +12,7 @@ import {
   GenerateFollowupQuestionSrv,
   GenerateSectionContentSrv,
   GetHistoryOfDocumentContractSrv,
+  UpdateLogoFontSrv,
 } from "./documents.services";
 import {
   IDocumentDraftClauses,
@@ -23,6 +24,7 @@ import {
   DocumentsBasicQuestion,
   DocumentsGenerateClausesContent,
   DocumentsTopics,
+  SaveDocumentPrintActionValidation,
 } from "./documents.validators";
 
 @SmurfAction({
@@ -103,6 +105,20 @@ export class DocumentGetSessionAction extends SmurfResponse {
 }
 
 @SmurfAction({
+  action: "/documents/attachInformation",
+  message: "Document attach information Successfully",
+  method: HTTP_METHODS.POST,
+  validation: SaveDocumentPrintActionValidation,
+})
+export class SaveDocumentPrintAction extends SmurfResponse {
+  async run(request: Request): Promise<void> {
+    const ipAddress = request.ip;
+    const { font, logo } = request.body;
+    this.result = await UpdateLogoFontSrv(ipAddress, font, logo);
+  }
+}
+
+@SmurfAction({
   action: "/documents/documentPrint",
   message: "Document Print Successfully",
   method: HTTP_METHODS.GET,
@@ -120,11 +136,12 @@ export class DocumentPrintAction extends PdfResponse {
       });
       return;
     }
+    const logo = generateLogo(dataInfo.logo);
     const dataToPrint = dataInfo.outline.map((r, index) =>
-      renderClauseHTML(r, index)
+      renderClauseHTML(r, index, dataInfo.font)
     );
 
-    const file = { content: dataToPrint.join("") };
+    const file = { content: [logo, ...dataToPrint].join("") };
     const pdfBuffer = await htmlToPdf.generatePdf(file, {
       format: "A4",
       margin: {

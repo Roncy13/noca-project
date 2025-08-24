@@ -79,6 +79,23 @@ export const GetHistoryOfDocumentContractSrv = (ipAddress: string) => {
   });
 };
 
+export const UpdateLogoFontSrv = (
+  ipAddress: string,
+  font: string,
+  logo: string
+) => {
+  return FollowupQuestion.findOneAndUpdate(
+    {
+      key: ipAddress,
+    },
+    {
+      $set: {
+        font,
+        logo,
+      },
+    }
+  );
+};
 // export const UpdateGenerateFollowupQuestionSrv = (
 //   payload: Pick<IDocumentsBasicQuestion, "questions">,
 //   key: string
